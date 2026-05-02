@@ -98,7 +98,10 @@ void main() {
 	#endif
 
 	#ifdef MOTION_BLUR
-	if (texture2D(gaux1, texcoord).a > 0.11) motion_blur(composite, color, texcoord, fetch_vpos(texcoord, depthtex0).xyz);
+	// 排除手部：手部深度 < 0.56，不应用动态模糊
+	float handDepth = texture2D(depthtex0, texcoord).r;
+	bool isHand = handDepth < 0.56;
+	if (!isHand && texture2D(gaux1, texcoord).a > 0.11) motion_blur(composite, color, texcoord, fetch_vpos(texcoord, depthtex0).xyz);
 	#endif
 
 	#ifdef DOF
