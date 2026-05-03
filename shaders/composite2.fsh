@@ -84,6 +84,10 @@ void main() {
 		}
 
 		sun.light.attenuation = 1.0 - max(extShadow, shadow);
+		
+		float skyLight = mclight.y;
+		float caveFactor = 1.0 - smoothstep(0.0, 0.3, skyLight);
+		sun.light.attenuation *= (1.0 - caveFactor);
 		#ifdef WATER_CAUSTICS
 		if (((!isEyeInWater && mask.is_water) || (isEyeInWater && !mask.is_water)) && shadow < 0.95) {
 			sun.light.attenuation *= fma(worldLightPosition.y, 0.98, 0.02) * (1.3 - get_caustic(land.wpos + cameraPosition));

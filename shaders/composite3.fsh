@@ -167,6 +167,12 @@ void main() {
 				sun.light.color = suncolor;
 				shadow = max(extShadow, shadow);
 				sun.light.attenuation = 1.0 - shadow;
+
+				// Cave check
+				float skyLight = mclight.y;
+				float caveFactor = 1.0 - smoothstep(0.0, 0.3, skyLight);
+				sun.light.attenuation *= (1.0 - caveFactor);
+				
 				sun.L = lightPosition;
 			
 				color += light_calc_PBR_brdf(sun, glossy);
@@ -230,7 +236,9 @@ void main() {
 		float vl = 0.0;
 		if (!isEyeInWater) {
 			lit_strength = VL(land.wpos, vl);
-			color += 0.008 * pow(vl, 0.35) * suncolor;
+			float skyLight = mclight.y;
+			float caveFactor = 1.0 - smoothstep(0.0, 0.3, skyLight);
+			color += 0.008 * pow(vl, 0.35) * suncolor * (1.0 - caveFactor);
 		}
 		#endif
 
