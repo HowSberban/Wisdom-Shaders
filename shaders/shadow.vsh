@@ -34,7 +34,8 @@ attribute vec4 mc_midTexCoord;
 uniform float rainStrength;
 uniform float frameTimeCounter;
 
-//uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferModelViewInverse;
+uniform vec3 cameraPosition;
 
 varying vec2 texcoord;
 varying vec3 color;
@@ -46,34 +47,42 @@ varying float LOD;
 
 #define WAVING_SHADOW
 
+// 改进的哈希函数 - 使用世界坐标实现区域独立晃动
+float plantHash(vec2 coord) {
+    return fract(sin(dot(coord, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
 void main() {
 	vec4 position = gl_Vertex;
 	color = gl_Color.rgb;
 
 	float blockId = mc_Entity.x;
 	#ifdef WAVING_SHADOW
-	// Category 31: Short plants and flowers - only lower part waves
+	// 使用 gl_Vertex + cameraPosition 计算稳定的世界坐标（避免矩阵转换的精度问题）
+	vec3 plantWorldPos = gl_Vertex.xyz + cameraPosition;
+	
+	// 类别 31：矮植物和花朵 - 只有下部晃动
 	if (gl_MultiTexCoord0.t < mc_midTexCoord.t && blockId == 31.0) {
-		// Use integer-based hash to prevent jittering
-		ivec2 intPos = ivec2(floor(gl_Vertex.x), floor(gl_Vertex.z));
-		float rand_ang = hash(vec2(intPos));
+		// 使用稳定的世界坐标生成独立随机种子
+		vec2 plantPos = floor(plantWorldPos.xz);
+		float rand_ang = plantHash(plantPos);
 		float maxStrength = 1.0 + rainStrength * 0.5;
-		float time = frameTimeCounter * 3.0;
+		// 雨天时加快晃动速度（基础速度 3.0，雨天最怏可达 4.5）
+		float time = frameTimeCounter * (3.0 + rainStrength * 1.5);
 		float reset = cos(rand_ang * 10.0 + time * 0.1);
-		reset = max( reset * reset, max(rainStrength, 0.1));
-		// Remove position.y from sin to decouple waving from player's Y coordinate
+		reset = max(reset * reset, max(rainStrength, 0.5));
 		position.x += (sin(rand_ang * 10.0 + time) * 0.2) * (reset * maxStrength);
 	}
-	// Category 32: Tall grass - both parts wave
+	// 类别 32：高草 - 上下部分都晃动
 	if (blockId == 32.0) {
-		// Use integer-based hash to prevent jittering
-		ivec2 intPos = ivec2(floor(gl_Vertex.x), floor(gl_Vertex.z));
-		float rand_ang = hash(vec2(intPos));
+		// 使用稳定的世界坐标生成独立随机种子
+		vec2 plantPos = floor(plantWorldPos.xz);
+		float rand_ang = plantHash(plantPos);
 		float maxStrength = 1.0 + rainStrength * 0.5;
-		float time = frameTimeCounter * 3.0;
+		// 雨天时加快晃动速度（基础速度 3.0，雨天最怏可达 4.5）
+		float time = frameTimeCounter * (3.0 + rainStrength * 1.5);
 		float reset = cos(rand_ang * 10.0 + time * 0.1);
-		reset = max( reset * reset, max(rainStrength, 0.1));
-		// Remove position.y from sin to decouple waving from player's Y coordinate
+		reset = max(reset * reset, max(rainStrength, 0.5));
 		position.x += (sin(rand_ang * 10.0 + time) * 0.2) * (reset * maxStrength);
 	}
 	position = gl_ProjectionMatrix * (gl_ModelViewMatrix * position);
@@ -89,7 +98,7 @@ void main() {
 	position.xy /= l * SHADOW_MAP_BIAS + negBias;
 	
 	LOD = l * 2.0;
-	// Disable shadow casting for waving plants at distance
+	// 禁用远距离晃动物体的阴影投射
 	if ((blockId == 31.0 || blockId == 32.0) && l > 0.5) position.z -= 1000000.0f;
 
 	gl_Position = position;

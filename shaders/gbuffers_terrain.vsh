@@ -36,6 +36,7 @@ attribute vec4 at_tangent;
 uniform mat4 gbufferModelViewInverse;
 uniform float rainStrength;
 uniform float frameTimeCounter;
+uniform vec3 cameraPosition;
 
 varying f16vec4 color;
 varying vec4 coords;
@@ -74,7 +75,10 @@ uniform vec3 shadowLightPosition;
 
 #define WAVING_FOILAGE
 
-#define hash(p) fract(mod(p.x, 1.0) * 73758.23f - p.y)
+// 改进的哈希函数 - 使用世界坐标实现区域独立晃动
+float plantHash(vec2 coord) {
+    return fract(sin(dot(coord, vec2(12.9898, 78.233))) * 43758.5453);
+}
 
 void main() {
 	color = gl_Color;
@@ -90,59 +94,57 @@ void main() {
 
 	#ifdef WAVING_FOILAGE
 	float maxStrength = 1.0 + rainStrength * 0.5;
-	float time = frameTimeCounter * 3.0;
+	// 雨天时加快晃动速度（基础速度 3.0，雨天最怏可达 4.5）
+	float time = frameTimeCounter * (3.0 + rainStrength * 1.5);
+	
+	// 使用 gl_Vertex + cameraPosition 计算稳定的世界坐标（避免矩阵转换的精度问题）
+	vec3 plantWorldPos = gl_Vertex.xyz + cameraPosition;
 	#endif
 
-	// Use block properties categories for waving foliage
-	// Category 31: Short plants and flowers (defined in block.properties) - only lower part waves
+	// 使用方块属性分类进行植物晃动
+	// 类别 31：矮植物和花朵（在 block.properties 中定义）- 只有下部晃动
 	if (mc_Entity.x == 31.0) {
 		#ifdef WAVING_FOILAGE
 		if (gl_MultiTexCoord0.t < mc_midTexCoord.t) {
-			// Use integer-based hash to prevent jittering
-			ivec2 intPos = ivec2(floor(gl_Vertex.x), floor(gl_Vertex.z));
-			float rand_ang = hash(vec2(intPos));
+			// 使用稳定的世界坐标生成独立随机种子
+			vec2 plantPos = floor(plantWorldPos.xz);
+			float rand_ang = plantHash(plantPos);
 			float reset = cos(rand_ang * 10.0 + time * 0.1);
-			reset = max( reset * reset, max(rainStrength, 0.1));
-			// Remove position.y from sin to decouple waving from player's Y coordinate
+			reset = max(reset * reset, max(rainStrength, 0.5));
 			position.x += (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
 		}
 		#endif
-		// Don't modify alpha - let the texture's original alpha control transparency
-		// color.a *= 0.4; // REMOVED: This was causing flowers to not render
+		// color.a *= 0.4; // 移除了，导致透明度问题
 		flag = 0.50;
-	// Category 32: Tall grass and double-height plants - both parts wave
+	// 类别 32：高草和双层植物 - 上下部分都晃动
 	} else if (mc_Entity.x == 32.0) {
 		#ifdef WAVING_FOILAGE
-		// Both upper and lower parts wave together for tall grass
-		// Use integer-based hash to prevent jittering
-		ivec2 intPos = ivec2(floor(gl_Vertex.x), floor(gl_Vertex.z));
-		float rand_ang = hash(vec2(intPos));
+		// 使用稳定的世界坐标生成独立随机种子
+		vec2 plantPos = floor(plantWorldPos.xz);
+		float rand_ang = plantHash(plantPos);
 		float reset = cos(rand_ang * 10.0 + time * 0.1);
-		reset = max( reset * reset, max(rainStrength, 0.1));
+		reset = max(reset * reset, max(rainStrength, 0.5));
 		
-		// Apply waving with different amplitudes for upper and lower parts
-		if (gl_MultiTexCoord0.t < mc_midTexCoord.t) {
-			// Lower part: amplitude 0.1
+			// 应用晃动，上下部分使用不同幅度
+			if (gl_MultiTexCoord0.t < mc_midTexCoord.t) {
 			position.x += (sin(rand_ang * 10.0 + time) * 0.15) * (reset * maxStrength);
 		} else {
-			// Upper part: smaller amplitude 0.05
 			position.x += (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
 		}
 		#endif
 		flag = 0.50;
-	// Category 18: Leaves (defined in block.properties)
+	// 类别 18：树叶（在 block.properties 中定义）
 	} else if(mc_Entity.x == 18.0) {
 		#ifdef WAVING_FOILAGE
-		// Use integer-based hash to prevent jittering
-		ivec2 intPos = ivec2(floor(gl_Vertex.x), floor(gl_Vertex.z));
-		float rand_ang = hash(vec2(intPos));
+		// 使用稳定的世界坐标生成独立随机种子
+		vec2 plantPos = floor(plantWorldPos.xz);
+		float rand_ang = plantHash(plantPos);
 		float reset = cos(rand_ang * 10.0 + time * 0.1);
-		reset = max( reset * reset, max(rainStrength, 0.1));
-		// Remove position.y from sin to decouple waving from player's Y coordinate
-		position.xyz += (sin(rand_ang * 5.0 + time) * 0.035 + 0.035) * (reset * maxStrength) * tangent;
+		reset = max(reset * reset, max(rainStrength, 0.5));
+		position.xyz += (sin(rand_ang * 5.0 + time) * 0.035 + 0.035) * (reset * maxStrength) * vec3(tangent.x, tangent.y, tangent.z);
 		#endif
 		flag = 0.50;
-	// Other waving blocks (crops, mushrooms, etc.)
+	// 其他晃动物块（作物、蘑菇等）
 	} else if (mc_Entity.x == 59.0 || mc_Entity.x == 141.0 || mc_Entity.x == 142.0 || mc_Entity.x == 37.0 || mc_Entity.x == 38.0 || mc_Entity.x == 39.0 || mc_Entity.x == 40.0 || mc_Entity.x == 6.0 || mc_Entity.x == 83.0 || mc_Entity.x == 104.0 || mc_Entity.x == 105.0 || mc_Entity.x == 115.0) {
 		flag = 0.51;
 	}
