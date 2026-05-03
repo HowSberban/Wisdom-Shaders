@@ -195,8 +195,8 @@ float get_exposure() {
 	float avg_luma = total_luma / float(sample_count);
 	float avr_exp = (0.5 - clamp(avg_luma, 0.0, 2.0)) * 1.5;
 	
-	// Reduced mix factor for smoother exposure transitions
-	basic_exp = mix(basic_exp, max(0.1, basic_exp + avr_exp), 0.3);
+	// Mix factor for exposure transitions
+	basic_exp = mix(basic_exp, max(0.1, basic_exp + avr_exp), 0.5);
 
 	return basic_exp;
 }
