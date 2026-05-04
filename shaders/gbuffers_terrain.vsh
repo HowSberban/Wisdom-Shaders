@@ -110,7 +110,10 @@ void main() {
 			float rand_ang = plantHash(plantPos);
 			float reset = cos(rand_ang * 10.0 + frameTimeCounter * 0.1);
 			reset = max(reset * reset, max(rainStrength, 0.5));
-			position.x += (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
+			// X 和 Z 方向都晃动（使用相同相位，形成对角线摆动）
+			float waveOffset = (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
+			position.x += waveOffset;
+			position.z += waveOffset;
 		}
 		#endif
 		// color.a *= 0.4; // 移除了，导致透明度问题
@@ -126,9 +129,13 @@ void main() {
 		
 			// 应用晃动，上部使用较大幅度，下部使用较小幅度
 			if (gl_MultiTexCoord0.t < mc_midTexCoord.t) {
-			position.x += (sin(rand_ang * 10.0 + time) * 0.15) * (reset * maxStrength);
+			float waveOffset = (sin(rand_ang * 10.0 + time) * 0.15) * (reset * maxStrength);
+			position.x += waveOffset;
+			position.z += waveOffset;
 		} else {
-			position.x += (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
+			float waveOffset = (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
+			position.x += waveOffset;
+			position.z += waveOffset;
 		}
 		#endif
 		flag = 0.50;

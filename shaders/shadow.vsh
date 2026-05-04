@@ -70,7 +70,10 @@ void main() {
 		float time = frameTimeCounter * 3.0;
 		float reset = cos(rand_ang * 10.0 + frameTimeCounter * 0.1);
 		reset = max(reset * reset, max(rainStrength, 0.5));
-		position.x += (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
+		// X 和 Z 方向都晃动（使用相同相位，形成对角线摆动）
+		float waveOffset = (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
+		position.x += waveOffset;
+		position.z += waveOffset;
 	}
 	// 类别 32：高草 - 上下部分都晃动
 	if (blockId == 32.0) {
@@ -83,9 +86,13 @@ void main() {
 		reset = max(reset * reset, max(rainStrength, 0.5));
 		// 上部使用较大幅度，与 gbuffers_terrain.vsh 保持一致
 		if (gl_MultiTexCoord0.t < mc_midTexCoord.t) {
-			position.x += (sin(rand_ang * 10.0 + time) * 0.15) * (reset * maxStrength);
+			float waveOffset = (sin(rand_ang * 10.0 + time) * 0.15) * (reset * maxStrength);
+			position.x += waveOffset;
+			position.z += waveOffset;
 		} else {
-			position.x += (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
+			float waveOffset = (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
+			position.x += waveOffset;
+			position.z += waveOffset;
 		}
 	}
 	position = gl_ProjectionMatrix * (gl_ModelViewMatrix * position);
