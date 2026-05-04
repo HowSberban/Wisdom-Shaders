@@ -95,9 +95,7 @@ void main() {
 	
 	float l = sqrt(dot(position.xy, position.xy));
 
-//	vec4 testpos = shadowProjection * (gbufferModelViewInverse * vec4(0.0, 0.0, 1.0, 1.0));
-//	if (dot(normalize(testpos.xy), normalize(position.xy)) < -0.3) position.z -= 1000000.0f;
-
+	// 阴影偏移：使用径向压缩防止漏光（只能简单地防止。。）
 	position.xy /= l * SHADOW_MAP_BIAS + negBias;
 	
 	LOD = l * 2.0;
