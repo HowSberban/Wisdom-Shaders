@@ -48,7 +48,7 @@ varying float LOD;
 #define WAVING_SHADOW
 
 // 高性能哈希函数，并不追求精度
-float plantHash(vec2 coord) {
+lowp float plantHash(lowp vec2 coord) {
     return fract(dot(coord, vec2(0.1, 0.3)));
 }
 
