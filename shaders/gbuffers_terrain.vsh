@@ -95,9 +95,9 @@ void main() {
 	#ifdef WAVING_FOILAGE
 	float maxStrength = 1.0 + rainStrength * 0.5;
 	float time = frameTimeCounter * 3.0;
-	
-	// 使用 gl_Vertex + cameraPosition 计算稳定的世界坐标（避免矩阵转换的精度问题）
-	vec3 plantWorldPos = gl_Vertex.xyz + cameraPosition;
+
+	// 使用四舍五入计算方块位置，避免边界跳变导致的抖动
+	vec2 plantPos = floor((gl_Vertex.xz + cameraPosition.xz) + 0.5);
 	#endif
 
 	// 使用方块属性分类进行植物晃动
@@ -106,7 +106,6 @@ void main() {
 		#ifdef WAVING_FOILAGE
 		if (gl_MultiTexCoord0.t < mc_midTexCoord.t) {
 			// 使用稳定的世界坐标生成独立随机种子
-			vec2 plantPos = floor(plantWorldPos.xz);
 			float rand_ang = plantHash(plantPos);
 			float reset = cos(rand_ang * 10.0 + frameTimeCounter * 0.1);
 			reset = max(reset * reset, max(rainStrength, 0.5));
@@ -122,7 +121,6 @@ void main() {
 	} else if (mc_Entity.x == 32.0) {
 		#ifdef WAVING_FOILAGE
 		// 使用稳定的世界坐标生成独立随机种子
-		vec2 plantPos = floor(plantWorldPos.xz);
 		float rand_ang = plantHash(plantPos);
 		float reset = cos(rand_ang * 10.0 + frameTimeCounter * 0.1);
 		reset = max(reset * reset, max(rainStrength, 0.5));
@@ -143,7 +141,6 @@ void main() {
 	} else if(mc_Entity.x == 18.0) {
 		#ifdef WAVING_FOILAGE
 		// 使用稳定的世界坐标生成独立随机种子
-		vec2 plantPos = floor(plantWorldPos.xz);
 		float rand_ang = plantHash(plantPos);
 		float reset = cos(rand_ang * 10.0 + frameTimeCounter * 0.1);
 		reset = max(reset * reset, max(rainStrength, 0.5));

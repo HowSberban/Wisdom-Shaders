@@ -58,13 +58,12 @@ void main() {
 
 	float blockId = mc_Entity.x;
 	#ifdef WAVING_SHADOW
-	// 使用 gl_Vertex + cameraPosition 计算稳定的世界坐标（避免矩阵转换的精度问题）
-	vec3 plantWorldPos = gl_Vertex.xyz + cameraPosition;
+	// 使用四舍五入计算方块位置，避免边界跳变导致的抖动
+	vec2 plantPos = floor((gl_Vertex.xz + cameraPosition.xz) + 0.5);
 	
 	// 类别 31：矮植物和花朵 - 只有上部晃动
 	if (gl_MultiTexCoord0.t < mc_midTexCoord.t && blockId == 31.0) {
 		// 使用稳定的世界坐标生成独立随机种子
-		vec2 plantPos = floor(plantWorldPos.xz);
 		float rand_ang = plantHash(plantPos);
 		float maxStrength = 1.0 + rainStrength * 0.5;
 		float time = frameTimeCounter * 3.0;
@@ -78,7 +77,6 @@ void main() {
 	// 类别 32：高草 - 上下部分都晃动
 	if (blockId == 32.0) {
 		// 使用稳定的世界坐标生成独立随机种子
-		vec2 plantPos = floor(plantWorldPos.xz);
 		float rand_ang = plantHash(plantPos);
 		float maxStrength = 1.0 + rainStrength * 0.5;
 		float time = frameTimeCounter * 3.0;
