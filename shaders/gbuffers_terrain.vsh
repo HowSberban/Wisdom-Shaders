@@ -75,9 +75,9 @@ uniform vec3 shadowLightPosition;
 
 #define WAVING_FOILAGE
 
-// 改进的哈希函数 - 使用世界坐标实现区域独立晃动
+// 高性能哈希函数，并不追求精度
 float plantHash(vec2 coord) {
-    return fract(sin(dot(coord, vec2(12.9898, 78.233))) * 43758.5453);
+    return fract(dot(coord, vec2(0.1, 0.3)));
 }
 
 void main() {
@@ -100,8 +100,7 @@ void main() {
 	vec2 plantPos = floor((gl_Vertex.xz + cameraPosition.xz) + 0.5);
 	#endif
 
-	// 使用方块属性分类进行植物晃动
-	// 类别 31：矮植物和花朵（在 block.properties 中定义）- 只有上部晃动
+	// 使用方块属性分类植物晃动
 	if (mc_Entity.x == 31.0) {
 		#ifdef WAVING_FOILAGE
 		if (gl_MultiTexCoord0.t < mc_midTexCoord.t) {
@@ -115,9 +114,8 @@ void main() {
 			position.z += waveOffset;
 		}
 		#endif
-		// color.a *= 0.4; // 移除了，导致透明度问题
+		// color.a *= 0.4; // 移除了，导致不渲染
 		flag = 0.50;
-	// 类别 32：高草和双层植物 - 上下部分都晃动
 	} else if (mc_Entity.x == 32.0) {
 		#ifdef WAVING_FOILAGE
 		// 使用稳定的世界坐标生成独立随机种子
@@ -137,7 +135,6 @@ void main() {
 		}
 		#endif
 		flag = 0.50;
-	// 类别 18：树叶（在 block.properties 中定义）
 	} else if(mc_Entity.x == 18.0) {
 		#ifdef WAVING_FOILAGE
 		// 使用稳定的世界坐标生成独立随机种子

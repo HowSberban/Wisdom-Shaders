@@ -47,9 +47,9 @@ varying float LOD;
 
 #define WAVING_SHADOW
 
-// 改进的哈希函数 - 使用世界坐标实现区域独立晃动
+// 高性能哈希函数，并不追求精度
 float plantHash(vec2 coord) {
-    return fract(sin(dot(coord, vec2(12.9898, 78.233))) * 43758.5453);
+    return fract(dot(coord, vec2(0.1, 0.3)));
 }
 
 void main() {
@@ -61,7 +61,7 @@ void main() {
 	// 使用四舍五入计算方块位置，避免边界跳变导致的抖动
 	vec2 plantPos = floor((gl_Vertex.xz + cameraPosition.xz) + 0.5);
 	
-	// 类别 31：矮植物和花朵 - 只有上部晃动
+	// 使用方块属性分类植物晃动
 	if (gl_MultiTexCoord0.t < mc_midTexCoord.t && blockId == 31.0) {
 		// 使用稳定的世界坐标生成独立随机种子
 		float rand_ang = plantHash(plantPos);
@@ -73,9 +73,7 @@ void main() {
 		float waveOffset = (sin(rand_ang * 10.0 + time) * 0.05) * (reset * maxStrength);
 		position.x += waveOffset;
 		position.z += waveOffset;
-	}
-	// 类别 32：高草 - 上下部分都晃动
-	if (blockId == 32.0) {
+	} else if (blockId == 32.0) {
 		// 使用稳定的世界坐标生成独立随机种子
 		float rand_ang = plantHash(plantPos);
 		float maxStrength = 1.0 + rainStrength * 0.5;
@@ -92,6 +90,14 @@ void main() {
 			position.x += waveOffset;
 			position.z += waveOffset;
 		}
+	} else if (blockId == 18.0) {
+		// 使用稳定的世界坐标生成独立随机种子
+		float rand_ang = plantHash(plantPos);
+		float maxStrength = 1.0 + rainStrength * 0.5;
+		float time = frameTimeCounter * 3.0;
+		float reset = cos(rand_ang * 10.0 + frameTimeCounter * 0.1);
+		reset = max(reset * reset, max(rainStrength, 0.5));
+		position.xyz += (sin(rand_ang * 5.0 + time) * 0.035 + 0.035) * (reset * maxStrength);
 	}
 	position = gl_ProjectionMatrix * (gl_ModelViewMatrix * position);
 	#else
@@ -105,7 +111,7 @@ void main() {
 	
 	LOD = l * 2.0;
 	// 禁用远距离晃动物体的阴影投射
-	if ((blockId == 31.0 || blockId == 32.0) && l > 0.5) position.z -= 1000000.0f;
+	if ((blockId == 31.0 || blockId == 32.0 || blockId == 18.0) && l > 0.5) position.z -= 1000000.0f;
 
 	gl_Position = position;
 	texcoord = gl_MultiTexCoord0.st;
