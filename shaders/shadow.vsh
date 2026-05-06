@@ -49,7 +49,7 @@ varying float LOD;
 
 // 高性能哈希函数，并不追求精度
 lowp float plantHash(lowp vec2 coord) {
-    return fract(dot(coord, vec2(0.1, 0.3)));
+    return fract(dot(coord, vec2(0.1031, 0.1037)));
 }
 
 void main() {
